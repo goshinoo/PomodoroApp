@@ -65,9 +65,14 @@ class TimerViewModel: ObservableObject {
     @Published var streak: Int = 0
     @Published var history: [HistoryItem] = []
 
+    @Published var autoStart: Bool = false {
+        didSet { UserDefaults.standard.set(autoStart, forKey: "pomo_auto_start") }
+    }
+
     private var total: Int = 25 * 60
     private var timer: Timer?
-    private var sessionCount: Int = 0  // resets each app launch; drives short/long break alternation
+    private var endDate: Date?
+    private var sessionCount: Int = 0
 
     func durationFor(_ m: Mode) -> Int {
         switch m {
@@ -148,11 +153,13 @@ class TimerViewModel: ObservableObject {
     var s_longDuration:    String { zh("长休息",    en: "Long Break") }
     var s_minutes:         String { zh("分钟",      en: "min") }
     var s_language:        String { zh("语言",      en: "Language") }
+    var s_autoStart:       String { zh("自动开始",  en: "Auto-start") }
 
     init() {
         loadDurations()
         if let code = UserDefaults.standard.string(forKey: "app_language"),
            let lang = AppLanguage(rawValue: code) { language = lang }
+        autoStart = UserDefaults.standard.bool(forKey: "pomo_auto_start")
         loadStats()
         remaining = workMins * 60
         total     = workMins * 60
@@ -189,6 +196,7 @@ class TimerViewModel: ObservableObject {
 
     private func startTimer() {
         isRunning = true
+        endDate = Date().addingTimeInterval(Double(remaining))
         let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
             DispatchQueue.main.async { self?.tick() }
         }
@@ -198,18 +206,22 @@ class TimerViewModel: ObservableObject {
 
     private func pauseTimer() {
         isRunning = false
+        endDate = nil
         timer?.invalidate()
         timer = nil
     }
 
     private func stopTimer() {
         isRunning = false
+        endDate = nil
         timer?.invalidate()
         timer = nil
     }
 
     private func tick() {
-        if remaining > 0 { remaining -= 1 } else { handleComplete() }
+        guard let end = endDate else { return }
+        remaining = max(0, Int(end.timeIntervalSince(Date())))
+        if remaining == 0 { handleComplete() }
     }
 
     private func handleComplete() {
@@ -218,6 +230,7 @@ class TimerViewModel: ObservableObject {
 
         if mode == .work {
             sessionCount += 1
+            UserDefaults.standard.set(sessionCount, forKey: "pomo_session_count")
             todayPomodoros += 1
             focusMinutes += workMins
             recordHistory()
@@ -231,6 +244,7 @@ class TimerViewModel: ObservableObject {
                              body:  zh("准备好开始下一个番茄了吗？", en: "Ready for the next pomodoro?"))
             setMode(.work)
         }
+        if autoStart { startTimer() }
     }
 
     private func recordHistory() {
@@ -279,6 +293,15 @@ class TimerViewModel: ObservableObject {
             history = h
         }
         streak = computeStreak()
+
+        let sessionDate = UserDefaults.standard.string(forKey: "pomo_session_date") ?? ""
+        if sessionDate != k {
+            sessionCount = 0
+            UserDefaults.standard.set(k, forKey: "pomo_session_date")
+            UserDefaults.standard.set(0, forKey: "pomo_session_count")
+        } else {
+            sessionCount = UserDefaults.standard.integer(forKey: "pomo_session_count")
+        }
     }
 
     private func saveStats() {
@@ -322,6 +345,28 @@ class TimerViewModel: ObservableObject {
         let newS = computeStreak() + 1
         UserDefaults.standard.set(["lastDay": today, "streak": newS], forKey: "pomo_streak")
         streak = newS
+    }
+
+    func last7Days() -> [(label: String, count: Int)] {
+        let cal = Calendar.current
+        let dayFmt = DateFormatter()
+        dayFmt.locale = Locale(identifier: language == .chinese ? "zh_CN" : "en_US")
+        dayFmt.dateFormat = "EEE"
+        let keyFmt = DateFormatter(); keyFmt.dateFormat = "yyyy-MM-dd"
+        return (0..<7).reversed().map { offset in
+            let date = cal.date(byAdding: .day, value: -offset, to: Date())!
+            let key = keyFmt.string(from: date)
+            let count = UserDefaults.standard.integer(forKey: "pomo_count_\(key)")
+            let label = offset == 0
+                ? zh("今", en: "T")
+                : String(dayFmt.string(from: date).prefix(2))
+            return (label: label, count: count)
+        }
+    }
+
+    var recentTasks: [String] {
+        let all = history.map { $0.task }.filter { !$0.isEmpty }
+        return Array(NSOrderedSet(array: all).array as! [String]).prefix(5).map { $0 }
     }
 
     func loadAllHistory() -> [DayRecord] {

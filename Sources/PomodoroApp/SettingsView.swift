@@ -18,13 +18,14 @@ struct SettingsView: View {
                     durationRow(label: vm.s_longDuration,  icon: "🌿",
                                 value: $vm.longMins,  range: 1...60)
                     languageRow
+                    autoStartRow
                 }
                 .padding(16)
                 Spacer()
             }
         }
         .preferredColorScheme(.dark)
-        .frame(width: 400, height: 310)
+        .frame(width: 400, height: 360)
     }
 
     private var header: some View {
@@ -83,6 +84,22 @@ struct SettingsView: View {
             }
             .pickerStyle(.segmented)
             .frame(width: 130)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.appCard.opacity(0.5).cornerRadius(10))
+    }
+
+    private var autoStartRow: some View {
+        HStack {
+            Text("⏭").font(.system(size: 15))
+            Text(vm.s_autoStart)
+                .font(.system(size: 13))
+                .foregroundColor(.white.opacity(0.85))
+            Spacer()
+            Toggle("", isOn: $vm.autoStart)
+                .toggleStyle(.switch)
+                .labelsHidden()
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)

@@ -5,6 +5,8 @@ struct ContentView: View {
     @State private var showHistory = false
     @State private var historyRecords: [DayRecord] = []
     @State private var showSettings = false
+    @State private var showSuggestions = false
+    @FocusState private var taskFocused: Bool
 
     private var accent: Color {
         switch vm.mode {
@@ -102,23 +104,57 @@ struct ContentView: View {
     // MARK: - Task input
 
     private var taskInput: some View {
-        TextField(vm.s_taskPlaceholder, text: $vm.taskText)
-            .textFieldStyle(.plain)
-            .font(.system(size: 13))
-            .foregroundColor(.white)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 9)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.appCard)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(
-                                vm.taskText.isEmpty ? Color.white.opacity(0.08) : accent.opacity(0.6),
-                                lineWidth: 1
-                            )
-                    )
-            )
+        ZStack(alignment: .topLeading) {
+            TextField(vm.s_taskPlaceholder, text: $vm.taskText)
+                .textFieldStyle(.plain)
+                .font(.system(size: 13))
+                .foregroundColor(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.appCard)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(
+                                    vm.taskText.isEmpty ? Color.white.opacity(0.08) : accent.opacity(0.6),
+                                    lineWidth: 1
+                                )
+                        )
+                )
+                .focused($taskFocused)
+                .onChange(of: taskFocused) { focused in
+                    showSuggestions = focused && !vm.recentTasks.isEmpty
+                }
+                .onSubmit { showSuggestions = false }
+
+            if showSuggestions && !vm.recentTasks.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(vm.recentTasks, id: \.self) { task in
+                        Button {
+                            vm.taskText = task
+                            showSuggestions = false
+                            taskFocused = false
+                        } label: {
+                            Text(task)
+                                .font(.system(size: 12))
+                                .foregroundColor(.white.opacity(0.75))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 7)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .background(Color.appCard.cornerRadius(8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+                .offset(y: 38)
+                .zIndex(10)
+            }
+        }
     }
 
     // MARK: - Timer ring
