@@ -1,0 +1,9 @@
+.build/
+.claude/
+*.o
+*.d
+*.swp
+.DS_Store
+Pomodoro.app/Contents/MacOS/Pomodoro
+/tmp/
+*.dmg

@@ -1,0 +1,170 @@
+import SwiftUI
+
+struct HistoryView: View {
+    let records: [DayRecord]
+    @Environment(\.dismiss) private var dismiss
+
+    var totalPomodoros: Int { records.reduce(0) { $0 + $1.pomodoros } }
+    var totalMinutes: Int   { records.reduce(0) { $0 + $1.focusMinutes } }
+
+    var body: some View {
+        ZStack {
+            Color.appBg.ignoresSafeArea()
+            VStack(spacing: 0) {
+                header
+                if records.isEmpty {
+                    emptyState
+                } else {
+                    summary
+                    Divider().background(Color.white.opacity(0.07))
+                    ScrollView(showsIndicators: false) {
+                        LazyVStack(spacing: 8) {
+                            ForEach(records) { DayCard(record: $0) }
+                        }
+                        .padding(16)
+                    }
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+        .frame(width: 400, height: 480)
+    }
+
+    // MARK: - Subviews
+
+    private var header: some View {
+        HStack {
+            Text("历史记录")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.white)
+            Spacer()
+            Button("完成") { dismiss() }
+                .buttonStyle(.plain)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.workAccent)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+    }
+
+    private var summary: some View {
+        HStack(spacing: 0) {
+            summaryCell(value: "\(records.count)", label: "记录天数")
+            Rectangle().fill(Color.white.opacity(0.08)).frame(width: 1, height: 28)
+            summaryCell(value: "\(totalPomodoros)", label: "累计番茄")
+            Rectangle().fill(Color.white.opacity(0.08)).frame(width: 1, height: 28)
+            summaryCell(value: "\(totalMinutes)", label: "累计分钟")
+        }
+        .padding(.vertical, 12)
+        .background(Color.appCard)
+    }
+
+    private func summaryCell(value: String, label: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.workAccent)
+            Text(label)
+                .font(.system(size: 11))
+                .foregroundColor(.white.opacity(0.4))
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 10) {
+            Text("🍅").font(.system(size: 52))
+            Text("还没有历史记录")
+                .font(.system(size: 14))
+                .foregroundColor(.white.opacity(0.35))
+            Text("完成第一个番茄后这里会显示记录")
+                .font(.system(size: 12))
+                .foregroundColor(.white.opacity(0.2))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - Day Card
+
+struct DayCard: View {
+    let record: DayRecord
+    @State private var expanded = true
+
+    var body: some View {
+        VStack(spacing: 0) {
+            dayHeader
+            if expanded {
+                taskList
+            }
+        }
+        .background(Color.appCard.cornerRadius(12))
+        .animation(.spring(response: 0.28, dampingFraction: 0.8), value: expanded)
+    }
+
+    private var dayHeader: some View {
+        Button { expanded.toggle() } label: {
+            HStack(spacing: 8) {
+                Text(record.displayDate)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white)
+
+                Spacer()
+
+                HStack(spacing: 12) {
+                    HStack(spacing: 4) {
+                        Text("🍅").font(.system(size: 11))
+                        Text("\(record.pomodoros)")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.workAccent)
+                    }
+                    HStack(spacing: 3) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 10))
+                            .foregroundColor(.white.opacity(0.35))
+                        Text("\(record.focusMinutes)min")
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.45))
+                    }
+                }
+
+                Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.white.opacity(0.25))
+                    .padding(.leading, 2)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var taskList: some View {
+        if !record.items.isEmpty {
+            Divider().background(Color.white.opacity(0.06))
+            VStack(spacing: 0) {
+                ForEach(Array(record.items.enumerated()), id: \.element.id) { idx, item in
+                    HStack {
+                        Text(item.task.isEmpty ? "专注" : item.task)
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.75))
+                        Spacer()
+                        Text("🍅×\(item.count)")
+                            .font(.system(size: 11))
+                            .foregroundColor(.workAccent)
+                        Text(item.time)
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.3))
+                            .padding(.leading, 6)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    if idx < record.items.count - 1 {
+                        Divider().background(Color.white.opacity(0.04)).padding(.leading, 14)
+                    }
+                }
+            }
+        }
+    }
+}
