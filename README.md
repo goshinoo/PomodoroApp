@@ -8,9 +8,13 @@ A minimal macOS Pomodoro timer built with Swift + SwiftUI.
 
 - **25 / 5 / 15 min** work and break cycles (fully customizable)
 - **Menu bar** — live countdown always visible, control without opening the main window
-- **Task tracking** — label what you're working on each session
+- **Task tracking** — label what you're working on; autocompletes from recent tasks
+- **Auto-start** — optionally start the next session automatically after each transition
+- **Accurate timer** — computed from wall-clock time, immune to system load and display sleep
+- **Session continuity** — the 4-session break cycle (3 short → 1 long) persists across app restarts
 - **Daily stats** — today's pomodoros, focus minutes, and streak days
-- **History view** — browse past sessions grouped by day
+- **History view** — 7-day bar chart + past sessions grouped by day
+- **CSV export** — export all session data from the History view
 - **System notifications + sound** on session complete
 - **Runs in background** — closing the window keeps the timer going; click the Dock icon to bring it back
 - **English / 中文** — language switcher in Settings
