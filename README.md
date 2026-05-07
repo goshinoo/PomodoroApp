@@ -22,9 +22,11 @@ A minimal macOS Pomodoro timer built with Swift + SwiftUI.
 ## Screenshots
 
 <div align="center">
-  <img src="screenshots/main.png" width="320" alt="Main window" />
-  &nbsp;&nbsp;&nbsp;
-  <img src="screenshots/settings.png" width="320" alt="Settings" />
+  <img src="screenshots/main.png" width="260" alt="Main window" />
+  &nbsp;&nbsp;
+  <img src="screenshots/settings.png" width="260" alt="Settings with Auto-start" />
+  &nbsp;&nbsp;
+  <img src="screenshots/history.png" width="260" alt="History with weekly chart" />
 </div>
 
 ## Build & Run
