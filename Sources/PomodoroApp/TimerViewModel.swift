@@ -74,6 +74,7 @@ class TimerViewModel: ObservableObject {
     private var timer: Timer?
     private var endDate: Date?
     private var sessionCount: Int = 0
+    private var isHandlingComplete = false
 
     func durationFor(_ m: Mode) -> Int {
         switch m {
@@ -227,6 +228,9 @@ class TimerViewModel: ObservableObject {
     }
 
     private func handleComplete() {
+        guard !isHandlingComplete else { return }
+        isHandlingComplete = true
+        defer { isHandlingComplete = false }
         stopTimer()
         playSound()
 
