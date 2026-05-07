@@ -156,6 +156,7 @@ class TimerViewModel: ObservableObject {
     var s_minutes:         String { zh("分钟",      en: "min") }
     var s_language:        String { zh("语言",      en: "Language") }
     var s_autoStart:       String { zh("自动开始",  en: "Auto-start") }
+    var s_clearConfirm:    String { zh("确认清空今日记录？", en: "Clear all today's records?") }
 
     init() {
         loadDurations()

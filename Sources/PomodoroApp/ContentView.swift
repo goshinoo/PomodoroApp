@@ -6,6 +6,7 @@ struct ContentView: View {
     @State private var showHistory = false
     @State private var showSettings = false
     @State private var showSuggestions = false
+    @State private var showClearConfirm = false
     @FocusState private var taskFocused: Bool
     @State private var ringPulse = false
     @State private var keyMonitor: Any?
@@ -270,10 +271,13 @@ struct ContentView: View {
                     .foregroundColor(.white.opacity(0.4))
                 Spacer()
                 if !vm.history.isEmpty {
-                    Button(vm.s_clear) { vm.clearHistory() }
+                    Button(vm.s_clear) { showClearConfirm = true }
                         .font(.system(size: 12))
                         .foregroundColor(.white.opacity(0.3))
                         .buttonStyle(.plain)
+                        .confirmationDialog(vm.s_clearConfirm, isPresented: $showClearConfirm, titleVisibility: .visible) {
+                            Button(vm.s_clear, role: .destructive) { vm.clearHistory() }
+                        }
                 }
             }
 
