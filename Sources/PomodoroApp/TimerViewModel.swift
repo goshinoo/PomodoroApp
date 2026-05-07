@@ -8,6 +8,7 @@ struct HistoryItem: Codable, Identifiable {
     var count: Int
     var time: String
     var date: String
+    var minsPerPomodoro: Int = 25
 }
 
 enum AppLanguage: String, CaseIterable {
@@ -265,7 +266,7 @@ class TimerViewModel: ObservableObject {
             history[last].count += 1
             history[last].time = timeStr
         } else {
-            history.append(HistoryItem(task: task, count: 1, time: timeStr, date: today))
+            history.append(HistoryItem(task: task, count: 1, time: timeStr, date: today, minsPerPomodoro: workMins))
         }
     }
 

@@ -111,7 +111,7 @@ struct HistoryView: View {
         for record in records {
             for item in record.items {
                 let safeTask = item.task.replacingOccurrences(of: "\"", with: "\"\"")
-                lines.append("\(record.date),\"\(safeTask)\",\(item.count),\(item.count * vm.workMins)")
+                lines.append("\(record.date),\"\(safeTask)\",\(item.count),\(item.count * item.minsPerPomodoro)")
             }
         }
         let csv = lines.joined(separator: "\n")
