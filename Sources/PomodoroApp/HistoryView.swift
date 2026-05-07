@@ -6,6 +6,7 @@ struct HistoryView: View {
     let records: [DayRecord]
     @EnvironmentObject private var vm: TimerViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var hoveredBarLabel: String? = nil
 
     var totalPomodoros: Int { records.reduce(0) { $0 + $1.pomodoros } }
     var totalMinutes: Int   { records.reduce(0) { $0 + $1.focusMinutes } }
@@ -66,19 +67,38 @@ struct HistoryView: View {
         let maxCount = max(data.map(\.count).max() ?? 1, 1)
         return HStack(alignment: .bottom, spacing: 8) {
             ForEach(data, id: \.label) { day in
+                let isHovered = hoveredBarLabel == day.label
                 VStack(spacing: 4) {
                     if day.count > 0 {
                         Text("\(day.count)")
                             .font(.system(size: 10))
                             .foregroundColor(.workAccent)
+                            .opacity(isHovered ? 0 : 1)
                     }
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(day.count > 0 ? Color.workAccent.opacity(0.7) : Color.white.opacity(0.07))
+                        .fill(isHovered
+                              ? Color.workAccent.opacity(1.0)
+                              : (day.count > 0 ? Color.workAccent.opacity(0.7) : Color.white.opacity(0.07)))
                         .frame(width: 28, height: max(4, CGFloat(day.count) / CGFloat(maxCount) * 60))
+                        .overlay(alignment: .top) {
+                            if isHovered {
+                                Text(day.fullDate)
+                                    .font(.system(size: 9))
+                                    .foregroundColor(.white.opacity(0.9))
+                                    .lineLimit(1)
+                                    .fixedSize()
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 3)
+                                    .background(Color.appBg.opacity(0.92).cornerRadius(4))
+                                    .offset(y: -22)
+                            }
+                        }
                     Text(day.label)
                         .font(.system(size: 9))
-                        .foregroundColor(.white.opacity(0.3))
+                        .foregroundColor(isHovered ? .white.opacity(0.6) : .white.opacity(0.3))
                 }
+                .onHover { hoveredBarLabel = $0 ? day.label : nil }
+                .animation(.easeOut(duration: 0.12), value: isHovered)
             }
         }
         .frame(maxWidth: .infinity)

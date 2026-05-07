@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct ContentView: View {
@@ -7,6 +8,8 @@ struct ContentView: View {
     @State private var showSettings = false
     @State private var showSuggestions = false
     @FocusState private var taskFocused: Bool
+    @State private var ringPulse = false
+    @State private var keyMonitor: Any?
 
     private var accent: Color {
         switch vm.mode {
@@ -39,6 +42,30 @@ struct ContentView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView().environmentObject(vm)
         }
+        .onAppear {
+            keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                guard event.keyCode == 49,
+                      event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty
+                else { return event }
+                if let r = NSApp.keyWindow?.firstResponder, r is NSTextView { return event }
+                DispatchQueue.main.async { vm.toggle() }
+                return nil
+            }
+        }
+        .onDisappear {
+            if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
+        }
+        .onChange(of: vm.isRunning) { running in
+            if running {
+                withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
+                    ringPulse = true
+                }
+            } else {
+                withAnimation(.easeOut(duration: 0.4)) {
+                    ringPulse = false
+                }
+            }
+        }
     }
 
     // MARK: - Drag area
@@ -51,25 +78,11 @@ struct ContentView: View {
             HStack {
                 Spacer()
                 HStack(spacing: 2) {
-                    Button { showSettings = true } label: {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 13))
-                            .foregroundColor(.white.opacity(0.35))
-                            .padding(6)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    Button {
+                    IconButton(icon: "slider.horizontal.3") { showSettings = true }
+                    IconButton(icon: "clock.arrow.circlepath") {
                         historyRecords = vm.loadAllHistory()
                         showHistory = true
-                    } label: {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 13))
-                            .foregroundColor(.white.opacity(0.35))
-                            .padding(6)
-                            .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
                 }
                 .padding(.trailing, 4)
             }
@@ -169,6 +182,10 @@ struct ContentView: View {
                 .stroke(accent, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.linear(duration: 0.9), value: vm.progress)
+                .shadow(
+                    color: vm.isRunning ? accent.opacity(ringPulse ? 0.55 : 0.12) : .clear,
+                    radius: 10
+                )
 
             VStack(spacing: 4) {
                 Text(vm.timeString)
@@ -188,33 +205,14 @@ struct ContentView: View {
 
     private var controlButtons: some View {
         HStack(spacing: 16) {
-            circleButton(icon: "arrow.counterclockwise", help: vm.s_reset) { vm.reset() }
+            CircleButton(icon: "arrow.counterclockwise", help: vm.s_reset) { vm.reset() }
 
-            Button { vm.toggle() } label: {
-                Text(vm.isRunning ? vm.s_pause : vm.s_start)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 120, height: 44)
-                    .background(accent.cornerRadius(22))
+            StartPauseButton(label: vm.isRunning ? vm.s_pause : vm.s_start, accent: accent) {
+                vm.toggle()
             }
-            .buttonStyle(.plain)
-            .animation(.spring(response: 0.25), value: vm.isRunning)
 
-            circleButton(icon: "forward.end.fill", help: vm.s_skip) { vm.skip() }
+            CircleButton(icon: "forward.end.fill", help: vm.s_skip) { vm.skip() }
         }
-    }
-
-    private func circleButton(icon: String, help: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 17))
-                .foregroundColor(.white.opacity(0.5))
-                .frame(width: 44, height: 44)
-                .background(Color.appCard)
-                .clipShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .help(help)
     }
 
     // MARK: - Stats
@@ -236,6 +234,8 @@ struct ContentView: View {
             Text(value)
                 .font(.system(size: 22, weight: .bold))
                 .foregroundColor(accent)
+                .contentTransition(.numericText())
+                .animation(.spring(response: 0.4), value: value)
             Text(label)
                 .font(.system(size: 11))
                 .foregroundColor(.white.opacity(0.4))
@@ -264,8 +264,7 @@ struct ContentView: View {
                 Text(vm.s_noRecords)
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.2))
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 16)
+                    .padding(.top, 4)
             } else {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 4) {
@@ -288,6 +287,71 @@ struct ContentView: View {
                 .frame(maxHeight: 110)
             }
         }
+    }
+}
+
+// MARK: - Button components
+
+struct CircleButton: View {
+    let icon: String
+    let help: String
+    let action: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 17))
+                .foregroundColor(.white.opacity(hovered ? 0.85 : 0.5))
+                .frame(width: 44, height: 44)
+                .background(Color.appCard.brightness(hovered ? 0.06 : 0))
+                .clipShape(Circle())
+                .scaleEffect(hovered ? 1.07 : 1.0)
+        }
+        .buttonStyle(.plain)
+        .help(help)
+        .onHover { hovered = $0 }
+        .animation(.easeOut(duration: 0.14), value: hovered)
+    }
+}
+
+struct StartPauseButton: View {
+    let label: String
+    let accent: Color
+    let action: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 120, height: 44)
+                .background(accent.opacity(hovered ? 0.80 : 1.0).cornerRadius(22))
+                .scaleEffect(hovered ? 1.04 : 1.0)
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
+        .animation(.easeOut(duration: 0.14), value: hovered)
+    }
+}
+
+struct IconButton: View {
+    let icon: String
+    let action: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundColor(.white.opacity(hovered ? 0.75 : 0.35))
+                .padding(6)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
+        .animation(.easeOut(duration: 0.12), value: hovered)
     }
 }
 

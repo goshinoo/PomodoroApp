@@ -10,7 +10,7 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 header
                 Divider().background(Color.white.opacity(0.07))
-                VStack(spacing: 6) {
+                VStack(spacing: 10) {
                     durationRow(label: vm.s_workDuration,  icon: "🍅",
                                 value: $vm.workMins,  range: 1...90)
                     durationRow(label: vm.s_shortDuration, icon: "☕",

@@ -347,11 +347,14 @@ class TimerViewModel: ObservableObject {
         streak = newS
     }
 
-    func last7Days() -> [(label: String, count: Int)] {
+    func last7Days() -> [(label: String, count: Int, fullDate: String)] {
         let cal = Calendar.current
         let dayFmt = DateFormatter()
         dayFmt.locale = Locale(identifier: language == .chinese ? "zh_CN" : "en_US")
         dayFmt.dateFormat = "EEE"
+        let fullFmt = DateFormatter()
+        fullFmt.locale = Locale(identifier: language == .chinese ? "zh_CN" : "en_US")
+        fullFmt.dateFormat = language == .chinese ? "M月d日" : "MMM d"
         let keyFmt = DateFormatter(); keyFmt.dateFormat = "yyyy-MM-dd"
         return (0..<7).reversed().map { offset in
             let date = cal.date(byAdding: .day, value: -offset, to: Date())!
@@ -360,7 +363,10 @@ class TimerViewModel: ObservableObject {
             let label = offset == 0
                 ? zh("今", en: "T")
                 : String(dayFmt.string(from: date).prefix(2))
-            return (label: label, count: count)
+            let fullDate = offset == 0
+                ? zh("今天", en: "Today")
+                : fullFmt.string(from: date)
+            return (label: label, count: count, fullDate: fullDate)
         }
     }
 
