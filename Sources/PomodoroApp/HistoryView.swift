@@ -115,8 +115,9 @@ struct HistoryView: View {
             }
         }
         let csv = lines.joined(separator: "\n")
+        let dateFmt = DateFormatter(); dateFmt.dateFormat = "yyyy-MM-dd"
         let panel = NSSavePanel()
-        panel.nameFieldStringValue = "pomodoro_export.csv"
+        panel.nameFieldStringValue = "pomodoro_export_\(dateFmt.string(from: Date())).csv"
         panel.allowedContentTypes = [.commaSeparatedText]
         if panel.runModal() == .OK, let url = panel.url {
             try? csv.write(to: url, atomically: true, encoding: .utf8)
