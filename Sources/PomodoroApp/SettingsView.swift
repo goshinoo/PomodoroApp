@@ -19,13 +19,14 @@ struct SettingsView: View {
                                 value: $vm.longMins,  range: 1...60)
                     languageRow
                     autoStartRow
+                    clearTaskRow
                 }
                 .padding(16)
                 Spacer()
             }
         }
         .preferredColorScheme(.dark)
-        .frame(width: 400, height: 360)
+        .frame(width: 400, height: 410)
     }
 
     private var header: some View {
@@ -98,6 +99,22 @@ struct SettingsView: View {
                 .foregroundColor(.white.opacity(0.85))
             Spacer()
             Toggle("", isOn: $vm.autoStart)
+                .toggleStyle(.switch)
+                .labelsHidden()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.appCard.opacity(0.5).cornerRadius(10))
+    }
+
+    private var clearTaskRow: some View {
+        HStack {
+            Text("✅").font(.system(size: 15))
+            Text(vm.s_clearTask)
+                .font(.system(size: 13))
+                .foregroundColor(.white.opacity(0.85))
+            Spacer()
+            Toggle("", isOn: $vm.clearTaskOnComplete)
                 .toggleStyle(.switch)
                 .labelsHidden()
         }

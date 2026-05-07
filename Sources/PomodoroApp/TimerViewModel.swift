@@ -71,6 +71,10 @@ class TimerViewModel: ObservableObject {
         didSet { UserDefaults.standard.set(autoStart, forKey: "pomo_auto_start") }
     }
 
+    @Published var clearTaskOnComplete: Bool = false {
+        didSet { UserDefaults.standard.set(clearTaskOnComplete, forKey: "pomo_clear_task") }
+    }
+
     private var total: Int = 25 * 60
     private var timer: Timer?
     private var endDate: Date?
@@ -158,12 +162,14 @@ class TimerViewModel: ObservableObject {
     var s_language:        String { zh("语言",      en: "Language") }
     var s_autoStart:       String { zh("自动开始",  en: "Auto-start") }
     var s_clearConfirm:    String { zh("确认清空今日记录？", en: "Clear all today's records?") }
+    var s_clearTask:       String { zh("完成后清空任务",   en: "Clear task on complete") }
 
     init() {
         loadDurations()
         if let code = UserDefaults.standard.string(forKey: "app_language"),
            let lang = AppLanguage(rawValue: code) { language = lang }
-        autoStart = UserDefaults.standard.bool(forKey: "pomo_auto_start")
+        autoStart          = UserDefaults.standard.bool(forKey: "pomo_auto_start")
+        clearTaskOnComplete = UserDefaults.standard.bool(forKey: "pomo_clear_task")
         loadStats()
         remaining = workMins * 60
         total     = workMins * 60
@@ -244,6 +250,7 @@ class TimerViewModel: ObservableObject {
             recordHistory()
             saveStats()
             bumpStreak()
+            if clearTaskOnComplete { taskText = "" }
             sendNotification(title: zh("番茄钟完成 🍅", en: "Pomodoro Done 🍅"),
                              body:  zh("休息一下吧！",   en: "Time for a break!"))
             setMode(sessionCount % 4 == 0 ? .longBreak : .shortBreak)
