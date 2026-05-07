@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HistoryView: View {
     let records: [DayRecord]
+    @EnvironmentObject private var vm: TimerViewModel
     @Environment(\.dismiss) private var dismiss
 
     var totalPomodoros: Int { records.reduce(0) { $0 + $1.pomodoros } }
@@ -30,15 +31,13 @@ struct HistoryView: View {
         .frame(width: 400, height: 480)
     }
 
-    // MARK: - Subviews
-
     private var header: some View {
         HStack {
-            Text("历史记录")
+            Text(vm.s_historyTitle)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(.white)
             Spacer()
-            Button("完成") { dismiss() }
+            Button(vm.s_done) { dismiss() }
                 .buttonStyle(.plain)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.workAccent)
@@ -49,11 +48,11 @@ struct HistoryView: View {
 
     private var summary: some View {
         HStack(spacing: 0) {
-            summaryCell(value: "\(records.count)", label: "记录天数")
+            summaryCell(value: "\(records.count)", label: vm.s_recordDays)
             Rectangle().fill(Color.white.opacity(0.08)).frame(width: 1, height: 28)
-            summaryCell(value: "\(totalPomodoros)", label: "累计番茄")
+            summaryCell(value: "\(totalPomodoros)", label: vm.s_totalPomo)
             Rectangle().fill(Color.white.opacity(0.08)).frame(width: 1, height: 28)
-            summaryCell(value: "\(totalMinutes)", label: "累计分钟")
+            summaryCell(value: "\(totalMinutes)", label: vm.s_totalMins)
         }
         .padding(.vertical, 12)
         .background(Color.appCard)
@@ -74,10 +73,10 @@ struct HistoryView: View {
     private var emptyState: some View {
         VStack(spacing: 10) {
             Text("🍅").font(.system(size: 52))
-            Text("还没有历史记录")
+            Text(vm.s_noHistoryTitle)
                 .font(.system(size: 14))
                 .foregroundColor(.white.opacity(0.35))
-            Text("完成第一个番茄后这里会显示记录")
+            Text(vm.s_noHistoryBody)
                 .font(.system(size: 12))
                 .foregroundColor(.white.opacity(0.2))
         }
@@ -89,14 +88,13 @@ struct HistoryView: View {
 
 struct DayCard: View {
     let record: DayRecord
+    @EnvironmentObject private var vm: TimerViewModel
     @State private var expanded = true
 
     var body: some View {
         VStack(spacing: 0) {
             dayHeader
-            if expanded {
-                taskList
-            }
+            if expanded { taskList }
         }
         .background(Color.appCard.cornerRadius(12))
         .animation(.spring(response: 0.28, dampingFraction: 0.8), value: expanded)
@@ -105,12 +103,10 @@ struct DayCard: View {
     private var dayHeader: some View {
         Button { expanded.toggle() } label: {
             HStack(spacing: 8) {
-                Text(record.displayDate)
+                Text(record.displayDate(language: vm.language))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white)
-
                 Spacer()
-
                 HStack(spacing: 12) {
                     HStack(spacing: 4) {
                         Text("🍅").font(.system(size: 11))
@@ -122,12 +118,11 @@ struct DayCard: View {
                         Image(systemName: "clock")
                             .font(.system(size: 10))
                             .foregroundColor(.white.opacity(0.35))
-                        Text("\(record.focusMinutes)min")
+                        Text("\(record.focusMinutes)\(vm.s_minutes)")
                             .font(.system(size: 12))
                             .foregroundColor(.white.opacity(0.45))
                     }
                 }
-
                 Image(systemName: expanded ? "chevron.up" : "chevron.down")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.white.opacity(0.25))
@@ -146,7 +141,7 @@ struct DayCard: View {
             VStack(spacing: 0) {
                 ForEach(Array(record.items.enumerated()), id: \.element.id) { idx, item in
                     HStack {
-                        Text(item.task.isEmpty ? "专注" : item.task)
+                        Text(item.task.isEmpty ? vm.s_defaultTask : item.task)
                             .font(.system(size: 12))
                             .foregroundColor(.white.opacity(0.75))
                         Spacer()

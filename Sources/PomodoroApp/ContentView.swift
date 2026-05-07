@@ -32,7 +32,7 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
         .ignoresSafeArea(.all, edges: .top)
         .sheet(isPresented: $showHistory) {
-            HistoryView(records: historyRecords)
+            HistoryView(records: historyRecords).environmentObject(vm)
         }
         .sheet(isPresented: $showSettings) {
             SettingsView().environmentObject(vm)
@@ -81,7 +81,7 @@ struct ContentView: View {
         HStack(spacing: 6) {
             ForEach(TimerViewModel.Mode.allCases, id: \.self) { m in
                 Button { vm.setMode(m) } label: {
-                    Text(m.rawValue)
+                    Text(vm.modeName(m))
                         .font(.system(size: 13, weight: vm.mode == m ? .semibold : .regular))
                         .foregroundColor(vm.mode == m ? .white : .white.opacity(0.45))
                         .padding(.horizontal, 16)
@@ -102,7 +102,7 @@ struct ContentView: View {
     // MARK: - Task input
 
     private var taskInput: some View {
-        TextField("正在做什么？（可选）", text: $vm.taskText)
+        TextField(vm.s_taskPlaceholder, text: $vm.taskText)
             .textFieldStyle(.plain)
             .font(.system(size: 13))
             .foregroundColor(.white)
@@ -152,10 +152,10 @@ struct ContentView: View {
 
     private var controlButtons: some View {
         HStack(spacing: 16) {
-            circleButton(icon: "arrow.counterclockwise", help: "重置") { vm.reset() }
+            circleButton(icon: "arrow.counterclockwise", help: vm.s_reset) { vm.reset() }
 
             Button { vm.toggle() } label: {
-                Text(vm.isRunning ? "暂停" : "开始")
+                Text(vm.isRunning ? vm.s_pause : vm.s_start)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(width: 120, height: 44)
@@ -164,7 +164,7 @@ struct ContentView: View {
             .buttonStyle(.plain)
             .animation(.spring(response: 0.25), value: vm.isRunning)
 
-            circleButton(icon: "forward.end.fill", help: "跳过") { vm.skip() }
+            circleButton(icon: "forward.end.fill", help: vm.s_skip) { vm.skip() }
         }
     }
 
@@ -185,11 +185,11 @@ struct ContentView: View {
 
     private var statsBar: some View {
         HStack(spacing: 0) {
-            statCell(value: "\(vm.todayPomodoros)", label: "今日番茄")
+            statCell(value: "\(vm.todayPomodoros)", label: vm.s_todayPomo)
             Rectangle().fill(Color.white.opacity(0.08)).frame(width: 1, height: 30)
-            statCell(value: "\(vm.focusMinutes)", label: "专注分钟")
+            statCell(value: "\(vm.focusMinutes)", label: vm.s_focusMins)
             Rectangle().fill(Color.white.opacity(0.08)).frame(width: 1, height: 30)
-            statCell(value: "\(vm.streak)", label: "连续天数")
+            statCell(value: "\(vm.streak)", label: vm.s_streakDays)
         }
         .padding(.vertical, 12)
         .background(Color.appCard.cornerRadius(14))
@@ -212,12 +212,12 @@ struct ContentView: View {
     private var historySection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("今日任务")
+                Text(vm.s_todayTasks)
                     .font(.system(size: 13))
                     .foregroundColor(.white.opacity(0.4))
                 Spacer()
                 if !vm.history.isEmpty {
-                    Button("清空") { vm.clearHistory() }
+                    Button(vm.s_clear) { vm.clearHistory() }
                         .font(.system(size: 12))
                         .foregroundColor(.white.opacity(0.3))
                         .buttonStyle(.plain)
@@ -225,7 +225,7 @@ struct ContentView: View {
             }
 
             if vm.history.isEmpty {
-                Text("暂无记录")
+                Text(vm.s_noRecords)
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.2))
                     .frame(maxWidth: .infinity)
@@ -235,7 +235,7 @@ struct ContentView: View {
                     VStack(spacing: 4) {
                         ForEach(vm.history.reversed()) { item in
                             HStack {
-                                Text(item.task.isEmpty ? "专注" : item.task)
+                                Text(item.task.isEmpty ? vm.s_defaultTask : item.task)
                                     .font(.system(size: 13))
                                     .foregroundColor(.white.opacity(0.85))
                                 Spacer()

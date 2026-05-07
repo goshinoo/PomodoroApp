@@ -27,7 +27,7 @@ struct MenuBarContent: View {
         HStack {
             Text(modeIcon)
                 .font(.system(size: 14))
-            Text(vm.mode.rawValue)
+            Text(vm.modeName(vm.mode))
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.white)
             Spacer()
@@ -55,7 +55,7 @@ struct MenuBarContent: View {
             menuButton(icon: "arrow.counterclockwise") { vm.reset() }
 
             Button { vm.toggle() } label: {
-                Text(vm.isRunning ? "暂停" : "开始")
+                Text(vm.isRunning ? vm.s_pause : vm.s_start)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)

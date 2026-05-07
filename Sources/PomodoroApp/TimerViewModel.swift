@@ -9,6 +9,12 @@ struct HistoryItem: Codable, Identifiable {
     var date: String
 }
 
+enum AppLanguage: String, CaseIterable {
+    case chinese = "zh"
+    case english = "en"
+    var displayName: String { self == .chinese ? "中文" : "English" }
+}
+
 struct DayRecord: Identifiable {
     var id: String { date }
     let date: String
@@ -16,15 +22,20 @@ struct DayRecord: Identifiable {
     let focusMinutes: Int
     let items: [HistoryItem]
 
-    var displayDate: String {
+    func displayDate(language: AppLanguage) -> String {
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
         guard let d = f.date(from: date) else { return date }
-        if Calendar.current.isDateInToday(d)      { return "今天" }
-        if Calendar.current.isDateInYesterday(d)  { return "昨天" }
-        let df = DateFormatter()
-        df.locale = Locale(identifier: "zh_CN")
-        df.dateFormat = "M月d日"
-        return df.string(from: d)
+        if language == .chinese {
+            if Calendar.current.isDateInToday(d)     { return "今天" }
+            if Calendar.current.isDateInYesterday(d) { return "昨天" }
+            let df = DateFormatter(); df.locale = Locale(identifier: "zh_CN"); df.dateFormat = "M月d日"
+            return df.string(from: d)
+        } else {
+            if Calendar.current.isDateInToday(d)     { return "Today" }
+            if Calendar.current.isDateInYesterday(d) { return "Yesterday" }
+            let df = DateFormatter(); df.locale = Locale(identifier: "en_US"); df.dateFormat = "MMM d"
+            return df.string(from: d)
+        }
     }
 }
 
@@ -33,6 +44,10 @@ class TimerViewModel: ObservableObject {
         case work       = "专注"
         case shortBreak = "短休息"
         case longBreak  = "长休息"
+    }
+
+    @Published var language: AppLanguage = .chinese {
+        didSet { UserDefaults.standard.set(language.rawValue, forKey: "app_language") }
     }
 
     // MARK: - Custom durations (minutes)
@@ -90,14 +105,54 @@ class TimerViewModel: ObservableObject {
 
     var sessionLabel: String {
         switch mode {
-        case .work:        return "第 \(todayPomodoros + 1) 个番茄"
-        case .shortBreak:  return "短暂休息中"
-        case .longBreak:   return "长时休息中"
+        case .work:        return zh("第 \(todayPomodoros + 1) 个番茄", en: "Pomodoro #\(todayPomodoros + 1)")
+        case .shortBreak:  return zh("短暂休息中", en: "Short break")
+        case .longBreak:   return zh("长时休息中", en: "Long break")
         }
     }
 
+    // MARK: - Localized strings
+
+    private func zh(_ c: String, en e: String) -> String { language == .chinese ? c : e }
+
+    func modeName(_ m: Mode) -> String {
+        switch m {
+        case .work:        return zh("专注",   en: "Focus")
+        case .shortBreak:  return zh("短休息", en: "Short")
+        case .longBreak:   return zh("长休息", en: "Long")
+        }
+    }
+
+    var s_taskPlaceholder: String { zh("正在做什么？（可选）", en: "What are you working on? (optional)") }
+    var s_start:           String { zh("开始",     en: "Start") }
+    var s_pause:           String { zh("暂停",     en: "Pause") }
+    var s_reset:           String { zh("重置",     en: "Reset") }
+    var s_skip:            String { zh("跳过",     en: "Skip") }
+    var s_todayPomo:       String { zh("今日番茄", en: "Today") }
+    var s_focusMins:       String { zh("专注分钟", en: "Minutes") }
+    var s_streakDays:      String { zh("连续天数", en: "Streak") }
+    var s_todayTasks:      String { zh("今日任务", en: "Today's Tasks") }
+    var s_noRecords:       String { zh("暂无记录", en: "No records yet") }
+    var s_clear:           String { zh("清空",     en: "Clear") }
+    var s_defaultTask:     String { zh("专注",     en: "Focus") }
+    var s_historyTitle:    String { zh("历史记录", en: "History") }
+    var s_done:            String { zh("完成",     en: "Done") }
+    var s_recordDays:      String { zh("记录天数", en: "Days") }
+    var s_totalPomo:       String { zh("累计番茄", en: "Pomodoros") }
+    var s_totalMins:       String { zh("累计分钟", en: "Minutes") }
+    var s_noHistoryTitle:  String { zh("还没有历史记录",           en: "No history yet") }
+    var s_noHistoryBody:   String { zh("完成第一个番茄后这里会显示记录", en: "Complete your first pomodoro to see records here") }
+    var s_settingsTitle:   String { zh("时长设置",  en: "Settings") }
+    var s_workDuration:    String { zh("专注时长",  en: "Focus") }
+    var s_shortDuration:   String { zh("短休息",    en: "Short Break") }
+    var s_longDuration:    String { zh("长休息",    en: "Long Break") }
+    var s_minutes:         String { zh("分钟",      en: "min") }
+    var s_language:        String { zh("语言",      en: "Language") }
+
     init() {
         loadDurations()
+        if let code = UserDefaults.standard.string(forKey: "app_language"),
+           let lang = AppLanguage(rawValue: code) { language = lang }
         loadStats()
         remaining = workMins * 60
         total     = workMins * 60
@@ -168,10 +223,12 @@ class TimerViewModel: ObservableObject {
             recordHistory()
             saveStats()
             bumpStreak()
-            sendNotification(title: "番茄钟完成 🍅", body: "休息一下吧！")
+            sendNotification(title: zh("番茄钟完成 🍅", en: "Pomodoro Done 🍅"),
+                             body:  zh("休息一下吧！",   en: "Time for a break!"))
             setMode(sessionCount % 4 == 0 ? .longBreak : .shortBreak)
         } else {
-            sendNotification(title: "休息结束", body: "准备好开始下一个番茄了吗？")
+            sendNotification(title: zh("休息结束",       en: "Break Over"),
+                             body:  zh("准备好开始下一个番茄了吗？", en: "Ready for the next pomodoro?"))
             setMode(.work)
         }
     }
