@@ -24,19 +24,20 @@ struct DayRecord: Identifiable {
     let focusMinutes: Int
     let items: [HistoryItem]
 
+    private static let keyFmt: DateFormatter = { let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; return f }()
+    private static let zhFmt:  DateFormatter = { let f = DateFormatter(); f.locale = Locale(identifier: "zh_CN"); f.dateFormat = "M月d日"; return f }()
+    private static let enFmt:  DateFormatter = { let f = DateFormatter(); f.locale = Locale(identifier: "en_US"); f.dateFormat = "MMM d"; return f }()
+
     func displayDate(language: AppLanguage) -> String {
-        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
-        guard let d = f.date(from: date) else { return date }
+        guard let d = DayRecord.keyFmt.date(from: date) else { return date }
         if language == .chinese {
             if Calendar.current.isDateInToday(d)     { return "今天" }
             if Calendar.current.isDateInYesterday(d) { return "昨天" }
-            let df = DateFormatter(); df.locale = Locale(identifier: "zh_CN"); df.dateFormat = "M月d日"
-            return df.string(from: d)
+            return DayRecord.zhFmt.string(from: d)
         } else {
             if Calendar.current.isDateInToday(d)     { return "Today" }
             if Calendar.current.isDateInYesterday(d) { return "Yesterday" }
-            let df = DateFormatter(); df.locale = Locale(identifier: "en_US"); df.dateFormat = "MMM d"
-            return df.string(from: d)
+            return DayRecord.enFmt.string(from: d)
         }
     }
 }
@@ -78,6 +79,8 @@ class TimerViewModel: ObservableObject {
     @Published var soundEnabled: Bool = true {
         didSet { UserDefaults.standard.set(soundEnabled, forKey: "pomo_sound_enabled") }
     }
+
+    private static let keyFormatter: DateFormatter = { let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; return f }()
 
     private var total: Int = 25 * 60
     private var timer: Timer?
@@ -303,8 +306,7 @@ class TimerViewModel: ObservableObject {
     // MARK: - Persistence
 
     private func todayKey() -> String {
-        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
-        return f.string(from: Date())
+        TimerViewModel.keyFormatter.string(from: Date())
     }
 
     private func loadStats() {
@@ -354,15 +356,13 @@ class TimerViewModel: ObservableObject {
         guard let dict = UserDefaults.standard.dictionary(forKey: "pomo_streak"),
               let lastDay = dict["lastDay"] as? String,
               let s = dict["streak"] as? Int else { return 0 }
-        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
-        guard let last = f.date(from: lastDay) else { return 0 }
+        guard let last = TimerViewModel.keyFormatter.date(from: lastDay) else { return 0 }
         let days = Calendar.current.dateComponents([.day], from: last, to: Date()).day ?? 99
         return (days <= 1) ? s : 0
     }
 
     private func bumpStreak() {
-        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
-        let today = f.string(from: Date())
+        let today = TimerViewModel.keyFormatter.string(from: Date())
         if let dict = UserDefaults.standard.dictionary(forKey: "pomo_streak"),
            let lastDay = dict["lastDay"] as? String, lastDay == today { return }
         let newS = computeStreak() + 1
@@ -378,10 +378,9 @@ class TimerViewModel: ObservableObject {
         let fullFmt = DateFormatter()
         fullFmt.locale = Locale(identifier: language == .chinese ? "zh_CN" : "en_US")
         fullFmt.dateFormat = language == .chinese ? "M月d日" : "MMM d"
-        let keyFmt = DateFormatter(); keyFmt.dateFormat = "yyyy-MM-dd"
         return (0..<7).reversed().map { offset in
             let date = cal.date(byAdding: .day, value: -offset, to: Date())!
-            let key = keyFmt.string(from: date)
+            let key = TimerViewModel.keyFormatter.string(from: date)
             let count = UserDefaults.standard.integer(forKey: "pomo_count_\(key)")
             let label = offset == 0
                 ? zh("今", en: "T")
