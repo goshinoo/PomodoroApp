@@ -219,8 +219,8 @@ class TimerViewModel: ObservableObject {
     private func startTimer() {
         isRunning = true
         endDate = Date().addingTimeInterval(Double(remaining))
-        let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
-            DispatchQueue.main.async { self?.tick() }
+        let t = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
+            self?.tick()
         }
         RunLoop.main.add(t, forMode: .common)
         timer = t
