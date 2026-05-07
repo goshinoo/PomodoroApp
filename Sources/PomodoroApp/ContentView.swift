@@ -4,7 +4,6 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var vm: TimerViewModel
     @State private var showHistory = false
-    @State private var historyRecords: [DayRecord] = []
     @State private var showSettings = false
     @State private var showSuggestions = false
     @FocusState private var taskFocused: Bool
@@ -39,7 +38,7 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
         .ignoresSafeArea(.all, edges: .top)
         .sheet(isPresented: $showHistory) {
-            HistoryView(records: historyRecords).environmentObject(vm)
+            HistoryView(records: vm.loadAllHistory()).environmentObject(vm)
         }
         .sheet(isPresented: $showSettings) {
             SettingsView().environmentObject(vm)
@@ -98,7 +97,6 @@ struct ContentView: View {
                 HStack(spacing: 2) {
                     IconButton(icon: "slider.horizontal.3") { showSettings = true }
                     IconButton(icon: "clock.arrow.circlepath") {
-                        historyRecords = vm.loadAllHistory()
                         showHistory = true
                     }
                 }
