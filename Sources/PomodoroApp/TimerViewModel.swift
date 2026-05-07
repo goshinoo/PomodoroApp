@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import UserNotifications
 
 struct HistoryItem: Codable, Identifiable {
     var id: UUID = UUID()
@@ -163,6 +164,7 @@ class TimerViewModel: ObservableObject {
         loadStats()
         remaining = workMins * 60
         total     = workMins * 60
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) { _, _ in }
     }
 
     // MARK: - Public
@@ -268,13 +270,12 @@ class TimerViewModel: ObservableObject {
     }
 
     private func sendNotification(title: String, body: String) {
-        let safeTitle = title.replacingOccurrences(of: "\"", with: "\\\"")
-        let safeBody  = body.replacingOccurrences(of:  "\"", with: "\\\"")
-        let script = "display notification \"\(safeBody)\" with title \"\(safeTitle)\""
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        task.arguments = ["-e", script]
-        try? task.run()
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body  = body
+        UNUserNotificationCenter.current().add(
+            UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        )
     }
 
     // MARK: - Persistence
