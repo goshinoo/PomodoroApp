@@ -46,7 +46,7 @@ class TimerViewModel: ObservableObject {
         case longBreak  = "长休息"
     }
 
-    @Published var language: AppLanguage = .chinese {
+    @Published var language: AppLanguage = .english {
         didSet { UserDefaults.standard.set(language.rawValue, forKey: "app_language") }
     }
 

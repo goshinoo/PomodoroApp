@@ -13,6 +13,7 @@ A minimal macOS Pomodoro timer built with Swift + SwiftUI.
 - **History view** — browse past sessions grouped by day
 - **System notifications + sound** on session complete
 - **Runs in background** — closing the window keeps the timer going; click the Dock icon to bring it back
+- **English / 中文** — language switcher in Settings
 
 ## Screenshots
 
