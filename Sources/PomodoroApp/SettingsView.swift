@@ -20,13 +20,14 @@ struct SettingsView: View {
                     languageRow
                     autoStartRow
                     clearTaskRow
+                    soundRow
                 }
                 .padding(16)
                 Spacer()
             }
         }
         .preferredColorScheme(.dark)
-        .frame(width: 400, height: 410)
+        .frame(width: 400, height: 460)
     }
 
     private var header: some View {
@@ -115,6 +116,22 @@ struct SettingsView: View {
                 .foregroundColor(.white.opacity(0.85))
             Spacer()
             Toggle("", isOn: $vm.clearTaskOnComplete)
+                .toggleStyle(.switch)
+                .labelsHidden()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.appCard.opacity(0.5).cornerRadius(10))
+    }
+
+    private var soundRow: some View {
+        HStack {
+            Text("🔔").font(.system(size: 15))
+            Text(vm.s_sound)
+                .font(.system(size: 13))
+                .foregroundColor(.white.opacity(0.85))
+            Spacer()
+            Toggle("", isOn: $vm.soundEnabled)
                 .toggleStyle(.switch)
                 .labelsHidden()
         }

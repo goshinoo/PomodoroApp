@@ -75,6 +75,10 @@ class TimerViewModel: ObservableObject {
         didSet { UserDefaults.standard.set(clearTaskOnComplete, forKey: "pomo_clear_task") }
     }
 
+    @Published var soundEnabled: Bool = true {
+        didSet { UserDefaults.standard.set(soundEnabled, forKey: "pomo_sound_enabled") }
+    }
+
     private var total: Int = 25 * 60
     private var timer: Timer?
     private var endDate: Date?
@@ -163,13 +167,17 @@ class TimerViewModel: ObservableObject {
     var s_autoStart:       String { zh("自动开始",  en: "Auto-start") }
     var s_clearConfirm:    String { zh("确认清空今日记录？", en: "Clear all today's records?") }
     var s_clearTask:       String { zh("完成后清空任务",   en: "Clear task on complete") }
+    var s_sound:           String { zh("声音提示",        en: "Sound") }
 
     init() {
         loadDurations()
         if let code = UserDefaults.standard.string(forKey: "app_language"),
            let lang = AppLanguage(rawValue: code) { language = lang }
-        autoStart          = UserDefaults.standard.bool(forKey: "pomo_auto_start")
+        autoStart           = UserDefaults.standard.bool(forKey: "pomo_auto_start")
         clearTaskOnComplete = UserDefaults.standard.bool(forKey: "pomo_clear_task")
+        if UserDefaults.standard.object(forKey: "pomo_sound_enabled") != nil {
+            soundEnabled = UserDefaults.standard.bool(forKey: "pomo_sound_enabled")
+        }
         loadStats()
         remaining = workMins * 60
         total     = workMins * 60
@@ -278,6 +286,7 @@ class TimerViewModel: ObservableObject {
     }
 
     private func playSound() {
+        guard soundEnabled else { return }
         let name = (mode == .work) ? "Glass" : "Blow"
         NSSound(named: NSSound.Name(name))?.play()
     }
