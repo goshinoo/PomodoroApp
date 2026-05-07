@@ -3,7 +3,7 @@ set -e
 cd "$(dirname "$0")"
 
 APP="Pomodoro"
-VERSION="1.0"
+VERSION="1.1"
 DMG="${APP}-${VERSION}.dmg"
 
 echo "▶ Building..."
