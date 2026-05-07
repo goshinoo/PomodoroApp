@@ -395,7 +395,7 @@ class TimerViewModel: ObservableObject {
 
     var recentTasks: [String] {
         let all = history.map { $0.task }.filter { !$0.isEmpty }
-        return Array(NSOrderedSet(array: all).array as! [String]).prefix(5).map { $0 }
+        return ((NSOrderedSet(array: all).array as? [String]) ?? []).prefix(5).map { $0 }
     }
 
     func loadAllHistory() -> [DayRecord] {
