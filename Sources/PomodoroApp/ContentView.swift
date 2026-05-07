@@ -10,6 +10,8 @@ struct ContentView: View {
     @FocusState private var taskFocused: Bool
     @State private var ringPulse = false
     @State private var keyMonitor: Any?
+    // Reference-type bridge so the NSEvent closure can read live focus state
+    @State private var focusBridge = FocusBridge()
 
     private var accent: Color {
         switch vm.mode {
@@ -43,11 +45,11 @@ struct ContentView: View {
             SettingsView().environmentObject(vm)
         }
         .onAppear {
-            keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [bridge = focusBridge] event in
                 guard event.keyCode == 49,
                       event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty
                 else { return event }
-                if let r = NSApp.keyWindow?.firstResponder, r is NSTextView { return event }
+                if bridge.taskEditing { return event }
                 DispatchQueue.main.async { vm.toggle() }
                 return nil
             }
@@ -137,6 +139,7 @@ struct ContentView: View {
                 )
                 .focused($taskFocused)
                 .onChange(of: taskFocused) { focused in
+                    focusBridge.taskEditing = focused
                     showSuggestions = focused && !vm.recentTasks.isEmpty
                 }
                 .onSubmit { showSuggestions = false }
@@ -288,6 +291,12 @@ struct ContentView: View {
             }
         }
     }
+}
+
+// MARK: - Focus bridge (reference type so NSEvent closure sees live state)
+
+final class FocusBridge {
+    var taskEditing = false
 }
 
 // MARK: - Button components
