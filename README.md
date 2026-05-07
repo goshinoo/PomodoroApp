@@ -16,9 +16,11 @@ A minimal macOS Pomodoro timer built with Swift + SwiftUI.
 
 ## Screenshots
 
-| Main Window | Menu Bar | Settings |
-|---|---|---|
-| Timer ring, task input, stats, history | Live countdown in the menu bar | Customizable durations |
+<div align="center">
+  <img src="screenshots/main.png" width="320" alt="Main window" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="screenshots/settings.png" width="320" alt="Settings" />
+</div>
 
 ## Build & Run
 
