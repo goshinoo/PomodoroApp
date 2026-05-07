@@ -38,11 +38,6 @@ struct ContentView: View {
         }
         .preferredColorScheme(.dark)
         .ignoresSafeArea(.all, edges: .top)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            taskFocused = false
-            NSApp.keyWindow?.makeFirstResponder(nil)
-        }
         .sheet(isPresented: $showHistory) {
             HistoryView(records: historyRecords).environmentObject(vm)
         }
@@ -54,7 +49,13 @@ struct ContentView: View {
             DispatchQueue.main.async {
                 NSApp.keyWindow?.makeFirstResponder(nil)
             }
-            keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [bridge = focusBridge] event in
+            keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseDown]) { [bridge = focusBridge] event in
+                // Click anywhere: dismiss text field focus (return event so buttons still fire)
+                if event.type == .leftMouseDown, bridge.taskEditing {
+                    DispatchQueue.main.async { NSApp.keyWindow?.makeFirstResponder(nil) }
+                    return event
+                }
+                guard event.type == .keyDown else { return event }
                 // Escape: resign text field focus
                 if event.keyCode == 53, bridge.taskEditing {
                     DispatchQueue.main.async { NSApp.keyWindow?.makeFirstResponder(nil) }
