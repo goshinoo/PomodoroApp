@@ -220,7 +220,7 @@ class TimerViewModel: ObservableObject {
 
     private func tick() {
         guard let end = endDate else { return }
-        remaining = max(0, Int(end.timeIntervalSince(Date())))
+        remaining = max(0, Int(ceil(end.timeIntervalSince(Date()))))
         if remaining == 0 { handleComplete() }
     }
 
