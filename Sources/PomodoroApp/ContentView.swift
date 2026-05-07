@@ -45,11 +45,21 @@ struct ContentView: View {
             SettingsView().environmentObject(vm)
         }
         .onAppear {
+            // Prevent TextField from auto-grabbing focus when the window opens
+            DispatchQueue.main.async {
+                NSApp.keyWindow?.makeFirstResponder(nil)
+            }
             keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [bridge = focusBridge] event in
+                // Escape: resign text field focus
+                if event.keyCode == 53, bridge.taskEditing {
+                    DispatchQueue.main.async { NSApp.keyWindow?.makeFirstResponder(nil) }
+                    return nil
+                }
+                // Space: toggle timer only when text field is not editing
                 guard event.keyCode == 49,
-                      event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty
+                      event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty,
+                      !bridge.taskEditing
                 else { return event }
-                if bridge.taskEditing { return event }
                 DispatchQueue.main.async { vm.toggle() }
                 return nil
             }
