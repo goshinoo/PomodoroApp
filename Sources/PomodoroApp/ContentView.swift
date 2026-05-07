@@ -38,6 +38,11 @@ struct ContentView: View {
         }
         .preferredColorScheme(.dark)
         .ignoresSafeArea(.all, edges: .top)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            taskFocused = false
+            NSApp.keyWindow?.makeFirstResponder(nil)
+        }
         .sheet(isPresented: $showHistory) {
             HistoryView(records: historyRecords).environmentObject(vm)
         }
