@@ -10,26 +10,39 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 header
                 Divider().background(Color.white.opacity(0.07))
-                VStack(spacing: 10) {
-                    durationRow(label: vm.s_workDuration,  icon: "🍅",
-                                value: $vm.workMins,  range: 1...90)
-                    durationRow(label: vm.s_shortDuration, icon: "☕",
-                                value: $vm.shortMins, range: 1...30)
-                    durationRow(label: vm.s_longDuration,  icon: "🌿",
-                                value: $vm.longMins,  range: 1...60)
-                    languageRow
-                    autoStartRow
-                    clearTaskRow
-                    soundRow
-                    dndRow
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        section(title: vm.s_sectionTimer) {
+                            durationRow(label: vm.s_workDuration,  icon: "🍅",
+                                        value: $vm.workMins,  range: 1...90)
+                            rowDivider
+                            durationRow(label: vm.s_shortDuration, icon: "☕",
+                                        value: $vm.shortMins, range: 1...30)
+                            rowDivider
+                            durationRow(label: vm.s_longDuration,  icon: "🌿",
+                                        value: $vm.longMins,  range: 1...60)
+                        }
+                        section(title: vm.s_sectionPrefs) {
+                            languageRow
+                            rowDivider
+                            toggleRow(icon: "⏭", label: vm.s_autoStart,    binding: $vm.autoStart)
+                            rowDivider
+                            toggleRow(icon: "✅", label: vm.s_clearTask,    binding: $vm.clearTaskOnComplete)
+                            rowDivider
+                            toggleRow(icon: "🔔", label: vm.s_sound,        binding: $vm.soundEnabled)
+                            rowDivider
+                            dndRow
+                        }
+                    }
+                    .padding(16)
                 }
-                .padding(16)
-                Spacer()
             }
         }
         .preferredColorScheme(.dark)
-        .frame(width: 400, height: 530)
+        .frame(width: 380, height: 500)
     }
+
+    // MARK: - Header
 
     private var header: some View {
         HStack {
@@ -43,13 +56,37 @@ struct SettingsView: View {
                 .foregroundColor(.workAccent)
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 14)
+        .padding(.vertical, 12)
     }
+
+    // MARK: - Section wrapper
+
+    private func section<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.white.opacity(0.3))
+                .padding(.horizontal, 4)
+                .padding(.bottom, 6)
+            VStack(spacing: 0) {
+                content()
+            }
+            .background(Color.appCard.cornerRadius(12))
+        }
+    }
+
+    private var rowDivider: some View {
+        Divider()
+            .background(Color.white.opacity(0.06))
+            .padding(.leading, 40)
+    }
+
+    // MARK: - Row types
 
     private func durationRow(label: String, icon: String,
                               value: Binding<Int>, range: ClosedRange<Int>) -> some View {
         HStack {
-            Text(icon).font(.system(size: 15))
+            Text(icon).font(.system(size: 14)).frame(width: 24)
             Text(label)
                 .font(.system(size: 13))
                 .foregroundColor(.white.opacity(0.85))
@@ -59,23 +96,38 @@ struct SettingsView: View {
                     if value.wrappedValue > range.lowerBound { value.wrappedValue -= 1 }
                 }
                 Text("\(value.wrappedValue) \(vm.s_minutes)")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.white)
-                    .frame(width: 68)
+                    .frame(width: 58)
                 stepButton(icon: "plus") {
                     if value.wrappedValue < range.upperBound { value.wrappedValue += 1 }
                 }
             }
-            .background(Color.appCard.cornerRadius(9))
+            .background(Color.white.opacity(0.07).cornerRadius(8))
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.appCard.opacity(0.5).cornerRadius(10))
+        .padding(.vertical, 9)
+    }
+
+    private func toggleRow(icon: String, label: String, binding: Binding<Bool>) -> some View {
+        HStack {
+            Text(icon).font(.system(size: 14)).frame(width: 24)
+            Text(label)
+                .font(.system(size: 13))
+                .foregroundColor(.white.opacity(0.85))
+            Spacer()
+            Toggle("", isOn: binding)
+                .toggleStyle(.switch)
+                .labelsHidden()
+                .scaleEffect(0.85)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
     }
 
     private var languageRow: some View {
         HStack {
-            Text("🌐").font(.system(size: 15))
+            Text("🌐").font(.system(size: 14)).frame(width: 24)
             Text(vm.s_language)
                 .font(.system(size: 13))
                 .foregroundColor(.white.opacity(0.85))
@@ -86,65 +138,16 @@ struct SettingsView: View {
                 }
             }
             .pickerStyle(.segmented)
-            .frame(width: 130)
+            .frame(width: 120)
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.appCard.opacity(0.5).cornerRadius(10))
-    }
-
-    private var autoStartRow: some View {
-        HStack {
-            Text("⏭").font(.system(size: 15))
-            Text(vm.s_autoStart)
-                .font(.system(size: 13))
-                .foregroundColor(.white.opacity(0.85))
-            Spacer()
-            Toggle("", isOn: $vm.autoStart)
-                .toggleStyle(.switch)
-                .labelsHidden()
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.appCard.opacity(0.5).cornerRadius(10))
-    }
-
-    private var clearTaskRow: some View {
-        HStack {
-            Text("✅").font(.system(size: 15))
-            Text(vm.s_clearTask)
-                .font(.system(size: 13))
-                .foregroundColor(.white.opacity(0.85))
-            Spacer()
-            Toggle("", isOn: $vm.clearTaskOnComplete)
-                .toggleStyle(.switch)
-                .labelsHidden()
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.appCard.opacity(0.5).cornerRadius(10))
-    }
-
-    private var soundRow: some View {
-        HStack {
-            Text("🔔").font(.system(size: 15))
-            Text(vm.s_sound)
-                .font(.system(size: 13))
-                .foregroundColor(.white.opacity(0.85))
-            Spacer()
-            Toggle("", isOn: $vm.soundEnabled)
-                .toggleStyle(.switch)
-                .labelsHidden()
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.appCard.opacity(0.5).cornerRadius(10))
+        .padding(.vertical, 9)
     }
 
     private var dndRow: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("🌙").font(.system(size: 15))
+                Text("🌙").font(.system(size: 14)).frame(width: 24)
                 Text(vm.s_dndIntegration)
                     .font(.system(size: 13))
                     .foregroundColor(.white.opacity(0.85))
@@ -152,26 +155,39 @@ struct SettingsView: View {
                 Toggle("", isOn: $vm.dndIntegrationEnabled)
                     .toggleStyle(.switch)
                     .labelsHidden()
+                    .scaleEffect(0.85)
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+
             if vm.dndIntegrationEnabled {
-                Text(vm.s_dndSetup)
-                    .font(.system(size: 10))
-                    .foregroundColor(.white.opacity(0.35))
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 10) {
+                    Button(vm.s_dndInstall) { vm.installDNDShortcuts() }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.workAccent)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 4)
+                        .background(Color.workAccent.opacity(0.12).cornerRadius(6))
+                        .overlay(RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.workAccent.opacity(0.3), lineWidth: 0.5))
+                    Text(vm.s_dndInstallHint)
+                        .font(.system(size: 10))
+                        .foregroundColor(.white.opacity(0.3))
+                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 10)
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.appCard.opacity(0.5).cornerRadius(10))
         .animation(.easeInOut(duration: 0.2), value: vm.dndIntegrationEnabled)
     }
 
     private func stepButton(icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.white.opacity(0.6))
-                .frame(width: 30, height: 30)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(.white.opacity(0.55))
+                .frame(width: 28, height: 28)
         }
         .buttonStyle(.plain)
     }

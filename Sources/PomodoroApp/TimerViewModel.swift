@@ -176,11 +176,16 @@ class TimerViewModel: ObservableObject {
     var s_clearConfirm:    String { zh("确认清空今日记录？", en: "Clear all today's records?") }
     var s_clearTask:       String { zh("完成后清空任务",   en: "Clear task on complete") }
     var s_sound:           String { zh("声音提示",        en: "Sound") }
+    var s_sectionTimer:    String { zh("时长",            en: "TIMER") }
+    var s_sectionPrefs:    String { zh("偏好设置",        en: "PREFERENCES") }
     var s_dndIntegration:  String { zh("勿扰模式联动",    en: "Do Not Disturb Sync") }
     var s_dndSetup:        String { zh(
         "需在「快捷指令」中创建以下三个快捷指令：\nPomodoro DND On — 开启勿扰\nPomodoro DND Off — 关闭勿扰\nPomodoro DND Check — 勿扰已开时输出 1，否则输出 0",
         en: "Create three shortcuts in the Shortcuts app:\nPomodoro DND On — enable DND\nPomodoro DND Off — disable DND\nPomodoro DND Check — output \"1\" if DND is on, \"0\" if off"
     ) }
+    var s_dndInstall:      String { zh("一键安装快捷指令", en: "Install Shortcuts") }
+    var s_dndInstallHint:  String { zh("将在浏览器中打开，点击「添加快捷指令」即可",
+                                        en: "Opens in browser — click \"Add Shortcut\"") }
 
     init() {
         loadDurations()
@@ -234,7 +239,7 @@ class TimerViewModel: ObservableObject {
         endDate = Date().addingTimeInterval(Double(remaining))
         if dndIntegrationEnabled, mode == .work, !appActivatedDND {
             if !isFocusCurrentlyActive() {
-                runShortcut("Pomodoro DND On")
+                runDND("on")
                 appActivatedDND = true
             }
         }
@@ -258,7 +263,7 @@ class TimerViewModel: ObservableObject {
         timer?.invalidate()
         timer = nil
         if appActivatedDND {
-            runShortcut("Pomodoro DND Off")
+            runDND("off")
             appActivatedDND = false
         }
     }
@@ -319,27 +324,35 @@ class TimerViewModel: ObservableObject {
 
     // MARK: - DND integration
 
+    func installDNDShortcuts() {
+        guard let url = URL(string: "https://www.icloud.com/shortcuts/3a246b1360ad414395de8a7a8816f3d6") else { return }
+        NSWorkspace.shared.open(url)
+    }
+
     private func isFocusCurrentlyActive() -> Bool {
-        let tmpPath = "/tmp/pomo_dnd_check_\(Int(Date().timeIntervalSince1970))"
+        let actionPath = "/tmp/pomo_dnd_action"
+        let outputPath = "/tmp/pomo_dnd_result_\(Int(Date().timeIntervalSince1970))"
+        try? "check".write(toFile: actionPath, atomically: true, encoding: .utf8)
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/usr/bin/shortcuts")
-        task.arguments = ["run", "Pomodoro DND Check",
-                          "--output-path", tmpPath,
+        task.arguments = ["run", "Pomodoro DND",
+                          "--output-path", outputPath,
                           "--output-type", "public.plain-text"]
         task.standardOutput = FileHandle.nullDevice
         task.standardError  = FileHandle.nullDevice
         try? task.run()
         task.waitUntilExit()
-        let result = (try? String(contentsOfFile: tmpPath, encoding: .utf8))?
+        let result = (try? String(contentsOfFile: outputPath, encoding: .utf8))?
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        try? FileManager.default.removeItem(atPath: tmpPath)
+        try? FileManager.default.removeItem(atPath: outputPath)
         return result == "1"
     }
 
-    private func runShortcut(_ name: String) {
+    private func runDND(_ action: String) {
+        try? action.write(toFile: "/tmp/pomo_dnd_action", atomically: true, encoding: .utf8)
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/usr/bin/shortcuts")
-        task.arguments = ["run", name]
+        task.arguments = ["run", "Pomodoro DND"]
         task.standardOutput = FileHandle.nullDevice
         task.standardError  = FileHandle.nullDevice
         try? task.run()
