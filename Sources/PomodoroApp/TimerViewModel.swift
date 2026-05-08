@@ -80,6 +80,10 @@ class TimerViewModel: ObservableObject {
         didSet { UserDefaults.standard.set(soundEnabled, forKey: "pomo_sound_enabled") }
     }
 
+    @Published var dndIntegrationEnabled: Bool = false {
+        didSet { UserDefaults.standard.set(dndIntegrationEnabled, forKey: "pomo_dnd_enabled") }
+    }
+
     private static let keyFormatter: DateFormatter = { let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; return f }()
 
     private var total: Int = 25 * 60
@@ -87,6 +91,7 @@ class TimerViewModel: ObservableObject {
     private var endDate: Date?
     private var sessionCount: Int = 0
     private var isHandlingComplete = false
+    private var appActivatedDND = false
 
     func durationFor(_ m: Mode) -> Int {
         switch m {
@@ -171,6 +176,11 @@ class TimerViewModel: ObservableObject {
     var s_clearConfirm:    String { zh("确认清空今日记录？", en: "Clear all today's records?") }
     var s_clearTask:       String { zh("完成后清空任务",   en: "Clear task on complete") }
     var s_sound:           String { zh("声音提示",        en: "Sound") }
+    var s_dndIntegration:  String { zh("勿扰模式联动",    en: "Do Not Disturb Sync") }
+    var s_dndSetup:        String { zh(
+        "需在「快捷指令」中创建以下三个快捷指令：\nPomodoro DND On — 开启勿扰\nPomodoro DND Off — 关闭勿扰\nPomodoro DND Check — 勿扰已开时输出 1，否则输出 0",
+        en: "Create three shortcuts in the Shortcuts app:\nPomodoro DND On — enable DND\nPomodoro DND Off — disable DND\nPomodoro DND Check — output \"1\" if DND is on, \"0\" if off"
+    ) }
 
     init() {
         loadDurations()
@@ -180,6 +190,9 @@ class TimerViewModel: ObservableObject {
         clearTaskOnComplete = UserDefaults.standard.bool(forKey: "pomo_clear_task")
         if UserDefaults.standard.object(forKey: "pomo_sound_enabled") != nil {
             soundEnabled = UserDefaults.standard.bool(forKey: "pomo_sound_enabled")
+        }
+        if UserDefaults.standard.object(forKey: "pomo_dnd_enabled") != nil {
+            dndIntegrationEnabled = UserDefaults.standard.bool(forKey: "pomo_dnd_enabled")
         }
         loadStats()
         remaining = workMins * 60
@@ -219,6 +232,12 @@ class TimerViewModel: ObservableObject {
     private func startTimer() {
         isRunning = true
         endDate = Date().addingTimeInterval(Double(remaining))
+        if dndIntegrationEnabled, mode == .work, !appActivatedDND {
+            if !isFocusCurrentlyActive() {
+                runShortcut("Pomodoro DND On")
+                appActivatedDND = true
+            }
+        }
         let t = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
             self?.tick()
         }
@@ -238,6 +257,10 @@ class TimerViewModel: ObservableObject {
         endDate = nil
         timer?.invalidate()
         timer = nil
+        if appActivatedDND {
+            runShortcut("Pomodoro DND Off")
+            appActivatedDND = false
+        }
     }
 
     private func tick() {
@@ -292,6 +315,34 @@ class TimerViewModel: ObservableObject {
         guard soundEnabled else { return }
         let name = (mode == .work) ? "Glass" : "Blow"
         NSSound(named: NSSound.Name(name))?.play()
+    }
+
+    // MARK: - DND integration
+
+    private func isFocusCurrentlyActive() -> Bool {
+        let tmpPath = "/tmp/pomo_dnd_check_\(Int(Date().timeIntervalSince1970))"
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/shortcuts")
+        task.arguments = ["run", "Pomodoro DND Check",
+                          "--output-path", tmpPath,
+                          "--output-type", "public.plain-text"]
+        task.standardOutput = FileHandle.nullDevice
+        task.standardError  = FileHandle.nullDevice
+        try? task.run()
+        task.waitUntilExit()
+        let result = (try? String(contentsOfFile: tmpPath, encoding: .utf8))?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        try? FileManager.default.removeItem(atPath: tmpPath)
+        return result == "1"
+    }
+
+    private func runShortcut(_ name: String) {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/shortcuts")
+        task.arguments = ["run", name]
+        task.standardOutput = FileHandle.nullDevice
+        task.standardError  = FileHandle.nullDevice
+        try? task.run()
     }
 
     private func sendNotification(title: String, body: String) {

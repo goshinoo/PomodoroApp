@@ -21,13 +21,14 @@ struct SettingsView: View {
                     autoStartRow
                     clearTaskRow
                     soundRow
+                    dndRow
                 }
                 .padding(16)
                 Spacer()
             }
         }
         .preferredColorScheme(.dark)
-        .frame(width: 400, height: 460)
+        .frame(width: 400, height: 530)
     }
 
     private var header: some View {
@@ -138,6 +139,31 @@ struct SettingsView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(Color.appCard.opacity(0.5).cornerRadius(10))
+    }
+
+    private var dndRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("🌙").font(.system(size: 15))
+                Text(vm.s_dndIntegration)
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.85))
+                Spacer()
+                Toggle("", isOn: $vm.dndIntegrationEnabled)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+            if vm.dndIntegrationEnabled {
+                Text(vm.s_dndSetup)
+                    .font(.system(size: 10))
+                    .foregroundColor(.white.opacity(0.35))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.appCard.opacity(0.5).cornerRadius(10))
+        .animation(.easeInOut(duration: 0.2), value: vm.dndIntegrationEnabled)
     }
 
     private func stepButton(icon: String, action: @escaping () -> Void) -> some View {
