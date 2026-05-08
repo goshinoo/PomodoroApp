@@ -42,6 +42,9 @@ struct MenuBarContent: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .disabled(vm.isRunning && vm.mode != m)
+                .opacity(vm.isRunning && vm.mode != m ? 0.3 : 1.0)
+                .animation(.easeOut(duration: 0.2), value: vm.isRunning)
             }
         }
         .padding(.horizontal, 10)
